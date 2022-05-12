@@ -17,6 +17,8 @@ def dispense(
     batch_size: int = BATCH_SIZE,
     token_address: str = "",
 ):
+    # FIX - Right now this expects a string, but it's being pass a str[]
+    # TODO - SimpleToken is not ERC20. Create a separate dispense for ERC20, or parameterize it.
     """
     @arguments
       rewards -- dict of [LP_addr]:OCEAN_float (not wei), from csv

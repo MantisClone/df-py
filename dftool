@@ -80,7 +80,7 @@ SUBGRAPH_URI -- e.g. for barge: http://127.0.0.1:9000
     print(f"Arguments:\n NETWORK={NETWORK}" \
           f"\n ST={ST}\n FIN={FIN}\n NSAMP={NSAMP}" \
           f"\n CSV_DIR={CSV_DIR}")
-        
+
     # extract envvars
     ADDRESS_FILE = os.environ.get('ADDRESS_FILE')
     SUBGRAPH_URI = os.environ.get('SUBGRAPH_URI')
@@ -90,7 +90,7 @@ SUBGRAPH_URI -- e.g. for barge: http://127.0.0.1:9000
         print("\nNeed to set envvar ADDRESS_FILE. Exiting."); sys.exit(0)
     if SUBGRAPH_URI is None:
         print("\nNeed to set envvar SUBGRAPH_URI. Exiting."); sys.exit(0)
-    
+
     # shouldn't already have the output files
     c1 = csvs.stakesCsvFilename(CSV_DIR, NETWORK)
     if os.path.exists(c1):
@@ -103,7 +103,7 @@ SUBGRAPH_URI -- e.g. for barge: http://127.0.0.1:9000
     if not os.path.exists(CSV_DIR):
         print(f"Directory {CSV_DIR} did not exist, so created it")
         os.mkdir(CSV_DIR)
-            
+
     #brownie setup
     brownie.network.connect(NETWORK)
     chain = brownie.network.chain
@@ -128,7 +128,7 @@ SUBGRAPH_URI -- e.g. for barge: http://127.0.0.1:9000
     (stakes, pool_vols) = query.query(rng, url)
     csvs.saveStakesCsv(stakes, CSV_DIR, NETWORK)
     csvs.savePoolVolsCsv(pool_vols, CSV_DIR, NETWORK)
-    
+
     print(f"dftool query: Done.")
 
 
@@ -153,7 +153,7 @@ Usage: dftool getrate TOKEN ST FIN CSV_DIR
     ST, FIN = sys.argv[3], sys.argv[4]
     CSV_DIR = sys.argv[5]
     print(f"Arguments: ST={ST}, FIN={FIN}, CSV_DIR={CSV_DIR}")
-    
+
     # shouldn't already have the output file
     c1 = csvs.rateCsvFilename(TOKEN, CSV_DIR)
     if os.path.exists(c1):
@@ -163,7 +163,7 @@ Usage: dftool getrate TOKEN ST FIN CSV_DIR
     if not os.path.exists(CSV_DIR):
         print(f"Directory {CSV_DIR} did not exist, so created it")
         os.mkdir(CSV_DIR)
-            
+
     #main work
     rate = getrate.getrate(TOKEN, ST, FIN)
     print(f"rate = ${rate:.4f} / {TOKEN}")
@@ -178,7 +178,7 @@ Usage: dftool calc CSV_DIR TOT_OCEAN
   CSV_DIR -- directory: input stakes & volumes csvs, output rewards.csv
   TOT_OCEAN -- total amount of OCEAN to distribute (in decimal, not wei)
 
-Outputs 
+Outputs
 """
 
     if len(sys.argv) not in [2+2]:
@@ -192,25 +192,25 @@ Outputs
     print(f"Arguments:\n TOT_OCEAN={TOT_OCEAN}, CSV_DIR={CSV_DIR}")
 
     # do we have the input files?
-    if not csvs.stakesCsvFilenames(CSV_DIR): 
+    if not csvs.stakesCsvFilenames(CSV_DIR):
         print(f"\nNo 'stakes*.csv' files in '{CSV_DIR}'. Exiting."); sys.exit(0)
-    if not csvs.poolVolsCsvFilenames(CSV_DIR): 
+    if not csvs.poolVolsCsvFilenames(CSV_DIR):
         print(f"\nNo 'pool_vol*.csv' files in '{CSV_DIR}'. Exiting."); sys.exit(0)
-    if not csvs.rateCsvFilenames(CSV_DIR): 
+    if not csvs.rateCsvFilenames(CSV_DIR):
         print(f"\nNo 'rate*.csv' files in '{CSV_DIR}'. Exiting."); sys.exit(0)
 
     # shouldn't already have the output file
     c = csvs.rewardsCsvFilename(CSV_DIR)
     if os.path.exists(c):
         print(f"\nFile {c} exists. Exiting."); sys.exit(0)
-    
+
     #main work
     stakes = csvs.loadStakesCsvs(CSV_DIR)
     pool_vols = csvs.loadPoolVolsCsvs(CSV_DIR)
     rates = csvs.loadRateCsvs(CSV_DIR)
     rewards = calcrewards.calcRewards(stakes, pool_vols, rates, TOT_OCEAN)
     csvs.saveRewardsCsv(rewards, CSV_DIR)
-    
+
     print(f"dftool calc: Done.")
 
 
@@ -226,7 +226,7 @@ Usage: dftool dispense CSV_DIR NETWORK [AIRDROP_ADDR] [TOKEN_ADDR]
 
 Transactions are signed with envvar 'DFTOOL_KEY`.
 """
-    if len(sys.argv) not in [4, 5]:
+    if len(sys.argv) not in [4, 5, 6]:
         print(HELP)
         sys.exit(0)
 
@@ -239,14 +239,16 @@ Transactions are signed with envvar 'DFTOOL_KEY`.
         AIRDROP_ADDR = os.getenv('AIRDROP_ADDR')
     else:
         AIRDROP_ADDR = sys.argv[4]
-        
+
     if len(sys.argv) == 5:
         print("Set AIRDROP_ADDR from envvar")
         TOKEN_ADDR = os.getenv('AIRDROP_ADDR')
     else:
         TOKEN_ADDR = sys.argv[5]
     assert TOKEN_ADDR is not None
-    TOKEN_ADDR = TOKEN_ADDR.split(",")
+
+    # FIX - Look at dispense.dispense() for further details
+    # TOKEN_ADDR = TOKEN_ADDR.split(",")
 
 
     print(f"Arguments: CSV_DIR={CSV_DIR}, NETWORK={NETWORK}" \
@@ -258,10 +260,10 @@ Transactions are signed with envvar 'DFTOOL_KEY`.
     from_account = _getPrivateAccount()
     rewards = csvs.loadRewardsCsv(CSV_DIR)
     dispense.dispense(rewards, AIRDROP_ADDR, from_account,token_address=TOKEN_ADDR)
-    
+
     print("dftool dispense: Done.")
 
-    
+
 # ========================================================================
 @enforce_types
 def do_newairdrop():
@@ -285,7 +287,7 @@ Usage: dftool newairdrop NETWORK TOKEN_ADDR
     from_account = _getPrivateAccount()
     airdrop = B.Airdrop.deploy({"from": from_account})
     print(f"New airdrop contract deployed at address: {airdrop.address}")
-    
+
     print("dftool newairdrop: Done.")
 
 
@@ -312,7 +314,7 @@ Usage: dftool manyrandom
     if len(sys.argv) not in [2]:
         print(HELP)
         sys.exit(0)
-        
+
     from util.test import conftest
     recordDeployedContracts(conftest._ADDRESS_FILE, "development")
     conftest.fillAccountsWithOCEAN()
@@ -353,7 +355,7 @@ Usage: dftool mine BLOCKS [TIMEDELTA]
         chain.mine(blocks=BLOCKS, timedelta=TIMEDELTA)
     else:
         chain.mine(blocks=BLOCKS)
-        
+
     print("dftool mine: Done.")
 
 # ========================================================================
@@ -372,7 +374,7 @@ Usage: dftool newacct
 
     #main work
     NETWORK = 'development' #hardcoded bc it's the only one we can force
-    brownie.network.connect(NETWORK) 
+    brownie.network.connect(NETWORK)
     account = brownie.network.accounts.add()
     print("Generated new account:")
     print(f" private_key = {account.private_key}")
@@ -431,7 +433,7 @@ If envvar ADDRESS_FILE is not None, it gives balance for OCEAN token too.
         addr_i = int(ACCOUNT_ADDR)
         ACCOUNT_ADDR = brownie.accounts[addr_i]
     print(f"  Address = {ACCOUNT_ADDR}")
-    
+
     if TOKEN_ADDR is not None:
         token = B.Simpletoken.at(TOKEN_ADDR)
         balance = token.balanceOf(ACCOUNT_ADDR)
@@ -492,7 +494,7 @@ def do_main():
         do_calc()
     elif sys.argv[1] == "dispense":
         do_dispense()
-        
+
     elif sys.argv[1] == "compile":
         do_compile()
     elif sys.argv[1] == "manyrandom":
